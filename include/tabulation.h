@@ -11,7 +11,8 @@ tabulation.h
 #include <fstream>
 #include <cmath>
 #include <vector>
-#define PI acos(-1)
+#include "plot.h"
+
 
 
 double legendre(int n, double x);
