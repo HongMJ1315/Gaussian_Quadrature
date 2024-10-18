@@ -44,15 +44,68 @@ double integralMinY = -3.0;
 double integralMaxY = 3.0;
 
 std::vector<std::pair<double, double> > variableN, variableGridSize;
-
+std::vector<std::pair<int, std::vector<std::pair<int, double > > > > totalIntegralResult;
 int main(){
+    // for(int i = 2; i <= 128; i *= 2){
+    //     variableN.push_back(std::make_pair(i, gauss_quadrature_2D(i, F, integralMinX, integralMaxX, integralMinY, integralMaxY)));
+    // }
+    // for(int i = 1; i <= 128; i *= 2){
+    //     variableGridSize.push_back(std::make_pair(i, gauss_quadrature_2D_grid(32, F, integralMinX, integralMaxX, integralMinY, integralMaxY, 6.0 / i)));
+    // }
+
+
+    std::cout << gauss_quadrature_2D_grid(2, F, integralMinX, integralMaxX, integralMinY, integralMaxY, 6.0 / 6) << std::endl;
+
     for(int i = 2; i <= 128; i *= 2){
-        variableN.push_back(std::make_pair(i, gauss_quadrature_2D(i, F, integralMinX, integralMaxX, integralMinY, integralMaxY)));
-    }
-    for(int i = 1; i <= 128; i *= 2){
-        variableGridSize.push_back(std::make_pair(i, gauss_quadrature_2D_grid(4, F, integralMinX, integralMaxX, integralMinY, integralMaxY, 6.0 / i)));
+        std::vector<std::pair<int, double> > row;
+        for(int j = 1; j <= 128; j *= 2){
+            row.push_back(std::make_pair(j, gauss_quadrature_2D_grid(i, F, integralMinX, integralMaxX, integralMinY, integralMaxY, 6.0 / j)));
+        }
+        totalIntegralResult.push_back(std::make_pair(i, row));
     }
 
+    // 將 (x, y, z) 座標數據寫入文件
+    std::ofstream outFile("xy_z_coordinates.dat");
+    for (const auto& pair : totalIntegralResult) {
+        int x = pair.first;
+        for (const auto& innerPair : pair.second) {
+            int y = innerPair.first;
+            double z = innerPair.second;
+            outFile << x << " " << y << " " << z << std::endl;  // 輸出 (x, y, z)
+        }
+    }
+    outFile.close();
+
+ // 調用 gnuplot 繪製 (x, y, z) 柱狀圖
+    FILE* gnuplotPipe = popen("gnuplot -persistent", "w");
+    if (gnuplotPipe) {
+        // 使用 wxt 終端彈出視窗
+        fprintf(gnuplotPipe, "set terminal wxt size 800,600\n");
+        fprintf(gnuplotPipe, "set title '3D Bar Chart (x, y, z)'\n");
+        fprintf(gnuplotPipe, "set xlabel 'X (Sample Points)'\n");
+        fprintf(gnuplotPipe, "set ylabel 'Y (Grid Size)'\n");
+        fprintf(gnuplotPipe, "set zlabel 'Z (Integration Result)'\n");
+
+        // 設置x和y軸為以2為底的對數刻度
+        fprintf(gnuplotPipe, "set logscale x 2\n");
+        fprintf(gnuplotPipe, "set logscale y 2\n");
+
+        // 自定義x軸和y軸的刻度標籤，顯示2^n數據
+        fprintf(gnuplotPipe, "set xtics ('2' 2, '4' 4, '8' 8, '16' 16, '32' 32, '64' 64, '128' 128, '256' 256)\n");
+        fprintf(gnuplotPipe, "set ytics ('1' 1, '2' 2, '4' 4, '8' 8, '16' 16, '32' 32, '64' 64, '128' 128, '256' 256)\n");
+
+        // 使用 boxes 繪製 3D 柱狀圖，並根據 z 值設置顏色
+        fprintf(gnuplotPipe, "set style fill solid\n"); // 設置柱狀圖為實心
+        fprintf(gnuplotPipe, "set palette defined (0 'blue', 1 'green', 2 'yellow', 3 'red')\n"); // 設置顏色範圍
+        fprintf(gnuplotPipe, "set style data boxes\n"); // 使用 boxes 繪製 3D 柱狀圖
+        fprintf(gnuplotPipe, "splot 'xy_z_coordinates.dat' using 1:2:3 with boxes lc palette notitle\n");
+
+        fflush(gnuplotPipe);
+        pclose(gnuplotPipe);
+    }
+
+
+    /*
      // 將數據寫入文件
     std::ofstream outFileN("variableN.dat");
     for (const auto& pair : variableN) {
@@ -101,6 +154,7 @@ int main(){
         fflush(gnuplotPipe);
         pclose(gnuplotPipe);
     }
+    */
 
 
     return 0;
