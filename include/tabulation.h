@@ -11,8 +11,7 @@ tabulation.h
 #include <fstream>
 #include <cmath>
 #include <vector>
-#include "plot.h"
-
+#include "func.h"
 
 
 double legendre(int n, double x);

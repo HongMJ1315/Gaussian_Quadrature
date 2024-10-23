@@ -46,7 +46,6 @@ std::vector<double> legendre_roots(int n, int max_iter, double tol) {
 }
 
 
-// 计算权重 w_i
 std::vector<double> compute_weights(int n, const std::vector<double>& roots) {
     std::vector<double> weights(n);
     for (int i = 0; i < n; ++i) {

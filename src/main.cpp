@@ -6,7 +6,17 @@
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>
+#include <ctime>
 #include "tabulation.h"
+
+#define FORMATE(x) std::scientific << std::setprecision(x)
+
+struct Data{
+    int n;
+    double integral;
+    time_t time;
+    double error;
+};
 
 double gauss_quadrature_2D(int n, double (*F)(double, double), double integralMinX, double integralMaxX, double integralMinY, double integralMaxY){
     std::vector<double> roots = legendre_roots(n, 100, 1e-10);
@@ -31,10 +41,15 @@ double gauss_quadrature_2D_grid(int n, double (*F)(double, double), double integ
     double integral = 0.0;
     for(double x = integralMinX; x < integralMaxX; x += gridSize){
         for(double y = integralMinY; y < integralMaxY; y += gridSize){
-            integral += gauss_quadrature_2D(n, F, x, x + gridSize, y, y + gridSize);
+            // std::cerr << x << " " << x + gridSize << " " << y << " " << y + gridSize << std::endl;
+            integral += gauss_quadrature_2D(n, F, x, std::min(3.0, x + gridSize), y, std::min(3.0,y + gridSize));
         }
     }
     return integral;
+}
+
+double dabs(double x){
+    return x < 0 ? -x : x;
 }
 
 
@@ -45,21 +60,83 @@ double integralMaxY = 3.0;
 
 std::vector<std::pair<double, double> > variableN, variableGridSize;
 std::vector<std::pair<int, std::vector<std::pair<int, double > > > > totalIntegralResult;
+std::vector<Data> resultDiffP;
+std::vector<Data> resultDiffH;
 int main(){
-    // for(int i = 2; i <= 128; i *= 2){
-    //     variableN.push_back(std::make_pair(i, gauss_quadrature_2D(i, F, integralMinX, integralMaxX, integralMinY, integralMaxY)));
-    // }
-    // for(int i = 1; i <= 128; i *= 2){
-    //     variableGridSize.push_back(std::make_pair(i, gauss_quadrature_2D_grid(32, F, integralMinX, integralMaxX, integralMinY, integralMaxY, 6.0 / i)));
-    // }
+    double currentIntegral = gauss_quadrature_2D_grid(15, F, integralMinX, integralMaxX, integralMinY, integralMaxY, 6.0 / 16);
+    std::cout << std::setprecision(15) << "Current Integral = " << currentIntegral << std::endl;
+    
+    
 
+    /*-------------------------
+    P-Refinement
+    -------------------------*/
+    std::ofstream pRef("P-Refinement.txt");
+    for(int i = 2; i <= 33; i++){
+        time_t start = time(NULL);
+        double res = gauss_quadrature_2D(i, F, integralMinX, integralMaxX, integralMinY, integralMaxY);
+        resultDiffP.push_back({i, res, time(NULL) - start, dabs(res - currentIntegral)});
+        // pRef << "N = " << i << ", Result = " << std::setprecision(10) << res << std::endl;
+    }
+    for(int i = 0; i < resultDiffP.size() / 2; i++){
+        pRef << FORMATE(10) << resultDiffP[i].n << " & " << resultDiffP[i].integral  << " & " << resultDiffP[i].error << " & " 
+        << resultDiffP[resultDiffP.size() / 2 + i].n << " & " << resultDiffP[resultDiffP.size() / 2 + i].integral << " & "  << resultDiffP[resultDiffP.size() / 2+ i].error << " \\\\" << std::endl; 
+        pRef << "\\hline" << std::endl;
+    }
+    if(resultDiffP.size() % 2 == 1){
+        pRef << FORMATE(10)  << resultDiffP[resultDiffP.size() / 2].n << " & " << resultDiffP[resultDiffP.size() / 2].integral << " & " << resultDiffP[resultDiffP.size() / 2].time << " & " << resultDiffP[resultDiffP.size() / 2].error << " & " << " & " << " & " << " & " << " \\\\" << std::endl;
+        pRef << "\\hline" << std::endl;
+    }
+    pRef.close();
 
-    std::cout << gauss_quadrature_2D_grid(2, F, integralMinX, integralMaxX, integralMinY, integralMaxY, 6.0 / 6) << std::endl;
+    /*-------------------------
+    H-Refinement
+    -------------------------*/
+    std::ofstream hRef("H-Refinement.txt");
+    for(int i = 1; i <= 32; i++){
+        time_t start = time(NULL);
+        double res = gauss_quadrature_2D_grid(8, F, integralMinX, integralMaxX, integralMinY, integralMaxY, 6.0 / i);
+        resultDiffH.push_back({i, res, time(NULL) - start, dabs(res - currentIntegral)});
+    }
+    for(int i = 0; i < resultDiffH.size() / 2; i++){
+        hRef << FORMATE(10)  << resultDiffH[i].n << " & " << resultDiffH[i].integral  << " & " << resultDiffH[i].error << " & " 
+        << resultDiffH[resultDiffH.size() / 2 + i].n << " & " << resultDiffH[resultDiffH.size() / 2 + i].integral << " & "  << resultDiffH[resultDiffH.size() / 2+ i].error << " \\\\" << std::endl; 
+        hRef << "\\hline" << std::endl;
+    }
+    if(resultDiffH.size() % 2 == 1){
+        hRef << FORMATE(10) << resultDiffH[resultDiffH.size() / 2].n << " & " << resultDiffH[resultDiffH.size() / 2].integral << " & " << resultDiffH[resultDiffH.size() / 2].time << " & " << resultDiffH[resultDiffH.size() / 2].error << " & " << " & " << " & " << " & " << " \\\\" << std::endl;
+        hRef << "\\hline" << std::endl;
+    }
+    hRef.close();
 
-    for(int i = 2; i <= 128; i *= 2){
+    /*-------------------------
+    HP-Refinement
+    -------------------------*/
+    for(int i = 1; i <= 10; i++){
         std::vector<std::pair<int, double> > row;
-        for(int j = 1; j <= 128; j *= 2){
-            row.push_back(std::make_pair(j, gauss_quadrature_2D_grid(i, F, integralMinX, integralMaxX, integralMinY, integralMaxY, 6.0 / j)));
+        for(int j = 3; j <= 10; j++){
+            row.push_back(std::make_pair(j, dabs(gauss_quadrature_2D_grid(i, F, integralMinX, integralMaxX, integralMinY, integralMaxY, 6.0 / j) - currentIntegral)));
+        }
+        totalIntegralResult.push_back(std::make_pair(i, row));
+    }
+    std::ofstream hpRef("HP-Refinement.txt");
+    for(int i = 0; i < totalIntegralResult[0].second.size(); i++)
+        hpRef << " & " << totalIntegralResult[0].second[i].first;
+    hpRef << "\\\\" << std::endl;
+    hpRef << "\\hline" << std::endl;
+    for(int i = 0; i < totalIntegralResult.size(); i++){
+        hpRef << totalIntegralResult[i].first;
+        for(int j = 0; j < totalIntegralResult[i].second.size(); j++){
+            hpRef << " & " << FORMATE(2) << totalIntegralResult[i].second[j].second;
+        }
+        hpRef << " \\\\" << std::endl;
+        hpRef << "\\hline" << std::endl;
+    }
+    totalIntegralResult.clear();
+        for(int i = 1; i <= 20; i++){
+        std::vector<std::pair<int, double> > row;
+        for(int j = 1; j <= 20; j++){
+            row.push_back(std::make_pair(j, dabs(gauss_quadrature_2D_grid(i, F, integralMinX, integralMaxX, integralMinY, integralMaxY, 6.0 / j) - currentIntegral)));
         }
         totalIntegralResult.push_back(std::make_pair(i, row));
     }
@@ -71,7 +148,7 @@ int main(){
         for (const auto& innerPair : pair.second) {
             int y = innerPair.first;
             double z = innerPair.second;
-            outFile << x << " " << y << " " << z << std::endl;  // 輸出 (x, y, z)
+            outFile << FORMATE(20) << x << " " << y << " " << z << std::endl;  // 輸出 (x, y, z)
         }
     }
     outFile.close();
@@ -79,83 +156,36 @@ int main(){
  // 調用 gnuplot 繪製 (x, y, z) 柱狀圖
     FILE* gnuplotPipe = popen("gnuplot -persistent", "w");
     if (gnuplotPipe) {
-        // 使用 wxt 終端彈出視窗
         fprintf(gnuplotPipe, "set terminal wxt size 800,600\n");
-        fprintf(gnuplotPipe, "set title '3D Bar Chart (x, y, z)'\n");
-        fprintf(gnuplotPipe, "set xlabel 'X (Sample Points)'\n");
-        fprintf(gnuplotPipe, "set ylabel 'Y (Grid Size)'\n");
-        fprintf(gnuplotPipe, "set zlabel 'Z (Integration Result)'\n");
-
-        // 設置x和y軸為以2為底的對數刻度
-        fprintf(gnuplotPipe, "set logscale x 2\n");
-        fprintf(gnuplotPipe, "set logscale y 2\n");
-
-        // 自定義x軸和y軸的刻度標籤，顯示2^n數據
-        fprintf(gnuplotPipe, "set xtics ('2' 2, '4' 4, '8' 8, '16' 16, '32' 32, '64' 64, '128' 128, '256' 256)\n");
-        fprintf(gnuplotPipe, "set ytics ('1' 1, '2' 2, '4' 4, '8' 8, '16' 16, '32' 32, '64' 64, '128' 128, '256' 256)\n");
-
-        // 使用 boxes 繪製 3D 柱狀圖，並根據 z 值設置顏色
-        fprintf(gnuplotPipe, "set style fill solid\n"); // 設置柱狀圖為實心
-        fprintf(gnuplotPipe, "set palette defined (0 'blue', 1 'green', 2 'yellow', 3 'red')\n"); // 設置顏色範圍
-        fprintf(gnuplotPipe, "set style data boxes\n"); // 使用 boxes 繪製 3D 柱狀圖
-        fprintf(gnuplotPipe, "splot 'xy_z_coordinates.dat' using 1:2:3 with boxes lc palette notitle\n");
-
+        // 设置绘图参数
+        fprintf(gnuplotPipe, "set xlabel 'Sample Point'\n");
+        fprintf(gnuplotPipe, "set ylabel 'Grid Size'\n");
+        fprintf(gnuplotPipe, "set zlabel 'Error Value'\n");
+        fprintf(gnuplotPipe, "set title 'Error Value 3D Bar Chart'\n");
+        // 设置颜色映射
+        fprintf(gnuplotPipe, "set palette defined (0 'blue', 1 'green', 2 'yellow', 3 'red')\n");
+        // 设置视角
+        fprintf(gnuplotPipe, "set view 60, 30, 1, 1\n");
+        // 绘图
+        fprintf(gnuplotPipe, "splot 'xy_z_coordinates.dat' using 1:2:3 with impulses lc palette lw 5 notitle\n");
         fflush(gnuplotPipe);
         pclose(gnuplotPipe);
     }
 
-
-    /*
-     // 將數據寫入文件
-    std::ofstream outFileN("variableN.dat");
-    for (const auto& pair : variableN) {
-        outFileN << pair.first << " " << pair.second << std::endl;
-    }
-    outFileN.close();
-
-    std::ofstream outFileGrid("variableGridSize.dat");
-    for (const auto& pair : variableGridSize) {
-        outFileGrid << pair.first << " " << pair.second << std::endl;
-    }
-    outFileGrid.close();
-
-    // 調用 gnuplot 繪製 variableN 圖
-    FILE* gnuplotPipe = popen("gnuplot -persistent", "w");
-    if (gnuplotPipe) {
-        fprintf(gnuplotPipe, "set terminal pngcairo size 800,600 enhanced font 'Verdana,10'\n");
-        fprintf(gnuplotPipe, "set output 'variableN.png'\n");
-        fprintf(gnuplotPipe, "set title 'Integration Result vs. N'\n");
-        fprintf(gnuplotPipe, "set xlabel 'N (Number of Sample Points)'\n");
-        fprintf(gnuplotPipe, "set ylabel 'Integration Result'\n");
-        fprintf(gnuplotPipe, "set style data histograms\n");
-        fprintf(gnuplotPipe, "set style histogram cluster gap 1\n");
-        fprintf(gnuplotPipe, "set style fill solid border -1\n");
-        fprintf(gnuplotPipe, "set boxwidth 0.9\n");
-        fprintf(gnuplotPipe, "set yrange [0:*]\n"); // 設置Y軸範圍從0開始
-        fprintf(gnuplotPipe, "plot 'variableN.dat' using 2:xtic(1) title 'Result'\n");
-        fflush(gnuplotPipe);
-        pclose(gnuplotPipe);
-    }
-
-    // 調用 gnuplot 繪製 variableGridSize 圖
+    // 使用 gnuplot 繪製 F(x, y) 函數圖(使用FUNCSTR宏定義的函數) 將結果存儲在文件中
     gnuplotPipe = popen("gnuplot -persistent", "w");
     if (gnuplotPipe) {
-        fprintf(gnuplotPipe, "set terminal pngcairo size 800,600 enhanced font 'Verdana,10'\n");
-        fprintf(gnuplotPipe, "set output 'variableGridSize.png'\n");
-        fprintf(gnuplotPipe, "set title 'Integration Result vs. Grid Size'\n");
-        fprintf(gnuplotPipe, "set xlabel 'Grid Size (1/grid)'\n");
-        fprintf(gnuplotPipe, "set ylabel 'Integration Result'\n");
-        fprintf(gnuplotPipe, "set style data histograms\n");
-        fprintf(gnuplotPipe, "set style histogram cluster gap 1\n");
-        fprintf(gnuplotPipe, "set style fill solid border -1\n");
-        fprintf(gnuplotPipe, "set boxwidth 0.9\n");
-        fprintf(gnuplotPipe, "set yrange [0:*]\n"); // 設置Y軸範圍從0開始
-        fprintf(gnuplotPipe, "plot 'variableGridSize.dat' using 2:xtic(1) title 'Result'\n");
+        fprintf(gnuplotPipe, "set terminal qt size 800,600\n");
+        fprintf(gnuplotPipe, "set title 'F(x, y) = %s'\n", FUNCSTR);
+        fprintf(gnuplotPipe, "set xlabel 'X'\n");
+        fprintf(gnuplotPipe, "set ylabel 'Y'\n");
+        fprintf(gnuplotPipe, "set pm3d\n");
+        fprintf(gnuplotPipe, "set hidden3d\n");
+        fprintf(gnuplotPipe, "set isosamples 50\n");
+        fprintf(gnuplotPipe, "splot [-3:3][-3:3] %s\n", FUNCSTR);
         fflush(gnuplotPipe);
         pclose(gnuplotPipe);
     }
-    */
-
 
     return 0;
 }
