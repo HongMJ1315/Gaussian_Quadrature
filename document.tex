@@ -10,6 +10,9 @@
 \usepackage{graphicx}
 \usepackage{float} % 加入 float 宏包以使用 [H]
 \usepackage{longtable}
+\usepackage{hyperref}  % 已经包含，不需要重复添加
+\usepackage{url}       % 处理网址链接
+\usepackage{cite}      % 优化引用格式
 
 \geometry{left=2.5cm, right=2.5cm, top=2.5cm, bottom=2.5cm}
 \pagestyle{fancy}
@@ -18,6 +21,12 @@
 \setmonofont{Consolas}
 % 設定內文文字大小
 \renewcommand{\normalsize}{\fontsize{12pt}{\baselineskip}\selectfont}
+
+
+% 修改参考文献样式，移除点
+\makeatletter
+\renewcommand\@biblabel[1]{[#1]} % Remove bullet and replace it with just a number
+\makeatother
 
 % 設定頁首
 \fancyhf{}
@@ -34,7 +43,7 @@
 \tableofcontents
 \newpage
 
-\section{程式概述}
+% \section{程式概述}
 
 
 \section{檔案與功能}
@@ -67,6 +76,7 @@
 \end{itemize}
 
 \subsection{tabulation.cpp}
+使用Pomax所提供的方法計算\cite{pomax_legendre_gauss}
 \begin{itemize}
     \item \texttt{double legendre(int, doulbe)}: 計算勒讓德多項式的值。
     \item \texttt{double legendre\_derivative(int, double)}: 計算勒讓德多項式的導數值。
@@ -77,6 +87,8 @@
 \subsection{main.cpp}
 \begin{itemize}
     \item \texttt{main()}: 主程式，呼叫compute\_weights計算權重及採樣點，並計算積分值，最後使用gnuplot繪圖。
+    \item \texttt{gauss\_quadrature\_2D(int, double(*)(double, double), double, double, double, double)}: 計算二維高斯積分。
+    \item \texttt{gauss\_quadrature\_2D\_grid(int, double(*)(double, double), double, double, double, double)}: 計算二維高斯積分，並使用網格量分段積分的方式。
 \end{itemize}
 
 
@@ -181,8 +193,6 @@ $G * G$為Grid數量，$Result$為積分值，$Error$為誤差，$N = 8$。
     \hline
     & 3 & 4 & 5 & 6 & 7 & 8 & 9 & 10\\
     \hline
-    1 & 3.60e+01 & 3.60e+01 & 0.00e+00 & 3.60e+01 & 2.13e-14 & 4.26e-14 & 3.55e-14 & 7.11e-15 \\
-    \hline
     2 & 2.03e+01 & 2.40e+01 & 7.11e-15 & 3.18e+01 & 2.13e-14 & 1.42e-14 & 1.42e-14 & 1.42e-14 \\
     \hline
     3 & 3.05e+00 & 2.65e+01 & 2.84e-14 & 1.91e+01 & 3.55e-14 & 6.39e-14 & 1.42e-14 & 2.84e-14 \\
@@ -201,17 +211,30 @@ $G * G$為Grid數量，$Result$為積分值，$Error$為誤差，$N = 8$。
     \hline
     10 & 3.22e-02 & 2.36e-04 & 1.42e-14 & 1.27e-07 & 4.26e-14 & 1.42e-14 & 7.11e-15 & 4.26e-14 \\
     \hline
-      
+    11 & 3.26e-03 & 1.24e-05 & 0.00e+00 & 2.82e-09 & 4.26e-14 & 2.13e-14 & 7.11e-15 & 2.13e-14 \\
+    \hline
+    
 \end{longtable}
-
+\subsection{Visualize}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{./img/plot.png}
+    \caption{Visualize}
+\end{figure}
 
 \section{心得}
-
+這次作業實做了高斯積分，並透過網格量分段積分的方式(H-Refinement)和多項式次數的增加(P-Refinement)來進行誤差分析，最後透過Refinement來找比較哪個方法的誤差較小。\\
+在實做過程中，原本是打算使用建表的方式來計算高斯積分的權重和採樣點，但在上網尋找資源時看到有人提供計算權重和採樣點的psuedo code，因此改用這個方法來計算，得到相比建表的方法更精確且彈性的結果。\\
+在結果視覺化中，原本打算使用OpenGL，但後來想說嘗試看看使用gnuplot，因此最後使用gnuplot來繪製函數圖形以及誤差。
 
 \section{參考資料}
-% https://pomax.github.io/bezierinfo/legendre-gauss.html
 
+\begin{thebibliography}{1}
 
+\bibitem{pomax_legendre_gauss}
+Pomax, “Legendre-Gauss Quadrature Nodes and Weights”, \url{https://pomax.github.io/bezierinfo/legendre-gauss.html}
+
+\end{thebibliography}
 
 \end{document}
 

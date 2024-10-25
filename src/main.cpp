@@ -65,8 +65,13 @@ std::vector<Data> resultDiffH;
 int main(){
     double currentIntegral = gauss_quadrature_2D_grid(15, F, integralMinX, integralMaxX, integralMinY, integralMaxY, 6.0 / 16);
     std::cout << std::setprecision(15) << "Current Integral = " << currentIntegral << std::endl;
-    
-    
+
+    for(int i = 2; i <= 4; i++){
+        for(int j = 2; j <= 4; j++){
+            std::cout << "N = " << i << ", Grid Size = " << j * j << ", Result = " << gauss_quadrature_2D_grid(i, F, integralMinX, integralMaxX, integralMinY, integralMaxY, 6.0 / j) << std::endl;
+
+        }
+    }    
 
     /*-------------------------
     P-Refinement
@@ -112,7 +117,7 @@ int main(){
     /*-------------------------
     HP-Refinement
     -------------------------*/
-    for(int i = 1; i <= 10; i++){
+    for(int i = 2; i <= 11; i++){
         std::vector<std::pair<int, double> > row;
         for(int j = 3; j <= 10; j++){
             row.push_back(std::make_pair(j, dabs(gauss_quadrature_2D_grid(i, F, integralMinX, integralMaxX, integralMinY, integralMaxY, 6.0 / j) - currentIntegral)));
@@ -133,7 +138,7 @@ int main(){
         hpRef << "\\hline" << std::endl;
     }
     totalIntegralResult.clear();
-        for(int i = 1; i <= 20; i++){
+    for(int i = 2; i <= 20; i++){
         std::vector<std::pair<int, double> > row;
         for(int j = 1; j <= 20; j++){
             row.push_back(std::make_pair(j, dabs(gauss_quadrature_2D_grid(i, F, integralMinX, integralMaxX, integralMinY, integralMaxY, 6.0 / j) - currentIntegral)));
