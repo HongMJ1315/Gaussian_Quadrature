@@ -13,6 +13,8 @@
 \usepackage{hyperref}  % 已经包含，不需要重复添加
 \usepackage{url}       % 处理网址链接
 \usepackage{cite}      % 优化引用格式
+\usepackage{xcolor}
+\usepackage{amsmath}
 
 \geometry{left=2.5cm, right=2.5cm, top=2.5cm, bottom=2.5cm}
 \pagestyle{fancy}
@@ -21,7 +23,6 @@
 \setmonofont{Consolas}
 % 設定內文文字大小
 \renewcommand{\normalsize}{\fontsize{12pt}{\baselineskip}\selectfont}
-
 
 % 修改参考文献样式，移除点
 \makeatletter
@@ -78,6 +79,15 @@
 \subsection{tabulation.cpp}
 使用Pomax所提供的方法計算\cite{pomax_legendre_gauss}
 \begin{itemize}
+    \begin{enumerate}
+        \item 取得Legender Polynomial的值。\\
+        $ P_{n}(x) = \frac{2n - 1}{n} x * P_{n-1}(x) - \frac{n - 1}{n} P_{n-2}(x) \quad (n \geq 2) $
+        \item 使用牛頓法計算根。\\
+        $ x_{0} = cos(\pi * (n - i - 0.25) / (n + 0.5)) $\\
+        $ x_{j + 1} = x_{j} - P_{n}(x_{j}) / P'_{n}(x_{j}) $
+        \item 計算權重。\\
+        $ w_{i} = 2 / ((1 - x_{i}^{2}) * (P'_{n}(x_{i}))^{2}) $
+    \end{enumerate}
     \item \texttt{double legendre(int, doulbe)}: 計算勒讓德多項式的值。
     \item \texttt{double legendre\_derivative(int, double)}: 計算勒讓德多項式的導數值。
     \item \texttt{std::vector<double> legendre\_roots(int, int, double)}: 計算勒讓德多項式的根。
@@ -87,8 +97,39 @@
 \subsection{main.cpp}
 \begin{itemize}
     \item \texttt{main()}: 主程式，呼叫compute\_weights計算權重及採樣點，並計算積分值，最後使用gnuplot繪圖。
-    \item \texttt{gauss\_quadrature\_2D(int, double(*)(double, double), double, double, double, double)}: 計算二維高斯積分。
-    \item \texttt{gauss\_quadrature\_2D\_grid(int, double(*)(double, double), double, double, double, double)}: 計算二維高斯積分，並使用網格量分段積分的方式。
+    \item \texttt{gauss\_quadrature\_2D(int, double(*)(double, double), double, double, double, double)}: 計算二維高斯積分。\\
+    $ \int_{a}^{b} \int_{c}^{d} f(x, y) dx dy $
+    $ \approx \sum_{i=0}^{n} \sum_{j=0}^{n} w_{i} w_{j} f(x_{i}, y_{j}) *  \frac{b - a}{2} * \frac{d - c}{2} $
+    \item \texttt{gauss\_quadrature\_2D\_grid(int, double(*)(double, double), double, double, double, double)}: 計算二維高斯積分，並使用網格量分段積分的方式。\\
+    % $g_x = \frac{|a - b|}{G} \quad g_y = \frac{|c - d|}{G}$\\
+    % $ \int_{a}^{b} \int_{c}^{d} f(x, y) dx dy $
+    % $ \approx \sum_{i=0}^{(b - a) / g_x - 1}  \sum_{j=0}^{(d - c) / g_y - 1} \sum_{k=0}^{n} \sum_{l=0}^{n} w_{k} w_{l} f(x_{k} * \frac{(a + g_x(i + 1)) - (a + g_{x} i)}{2} + \frac{(c + g_x(i + 1)) + (c + g_{x} i)}{2}, y_{l} * \frac{(c + g_y(j + 1)) - (c + g_{y} j)}{2} + \frac{(c + g_y(j + 1)) + (c + g_{y} j)}{2}) *  \frac{(a + g_x(i + 1)) - (a + g_{x} i)}{2} * \frac{(c + g_y(j + 1)) - (c + g_{y} j)}{2} $ \\
+    % $ = \sum_{i=0}^{(b - a) / g_x - 1}  \sum_{j=0}^{(d - c) / g_y - 1} \sum_{k=0}^{n} \sum_{l=0}^{n} w_{k} w_{l} f(x_{k} * \frac{g_x}{2} + (a + g_{x}i + \frac{g_x}{2}), y_{l} * \frac{g_y}{2} + (c + g_{y}j + \frac{g_y}{2})) *  \frac{g_x}{2} * \frac{g_y}{2} $ \\
+    \begin{flalign*}
+        &g_x = \frac{|a - b|}{G} \quad g_y = \frac{|c - d|}{G} &&\\
+        &\int_{a}^{b} \int_{c}^{d} f(x, y) dx \, dy \approx 
+        \sum_{i=0}^{\frac{b - a}{g_x} - 1} \sum_{j=0}^{\frac{d - c}{g_y} - 1} \sum_{k=0}^{n} \sum_{l=0}^{n} 
+        \textcolor{blue}{w_{k} w_{l}} 
+        f\left(
+        \textcolor{red}{x_{k} \cdot \frac{(a + g_x(i + 1)) - (a + g_x i)}{2}} \right. \\
+        & \left. + \textcolor{green}{\frac{(a + g_x(i + 1)) + (a + g_x i)}{2}},
+        \textcolor{red}{y_{l} \cdot \frac{(c + g_y(j + 1)) - (c + g_y j)}{2}} 
+        + \textcolor{green}{\frac{(c + g_y(j + 1)) + (c + g_y j)}{2}}
+        \right) \\
+        &\cdot \textcolor{blue}{\frac{(a + g_x(i + 1)) - (a + g_x i)}{2}} 
+        \cdot \textcolor{blue}{\frac{(c + g_y(j + 1)) - (c + g_y j)}{2}} &&\\
+        &=
+        \sum_{i=0}^{\frac{b - a}{g_x} - 1} \sum_{j=0}^{\frac{d - c}{g_y} - 1} \sum_{k=0}^{n} \sum_{l=0}^{n} 
+        \textcolor{blue}{w_{k} w_{l}} 
+        f\left(
+        \textcolor{red}{x_{k} \cdot \frac{g_x}{2}} 
+        + \textcolor{green}{(a + g_x i + \frac{g_x}{2})}, 
+         \textcolor{red}{y_{l} \cdot \frac{g_y}{2}} 
+        + \textcolor{green}{(c + g_y j + \frac{g_y}{2})}
+        \right)
+        \cdot \textcolor{blue}{\frac{g_x}{2}} 
+        \cdot \textcolor{blue}{\frac{g_y}{2}} &&
+    \end{flalign*}
 \end{itemize}
 
 
@@ -232,7 +273,7 @@ $G * G$為Grid數量，$Result$為積分值，$Error$為誤差，$N = 8$。
 \begin{thebibliography}{1}
 
 \bibitem{pomax_legendre_gauss}
-Pomax, “Legendre-Gauss Quadrature Nodes and Weights”, \url{https://pomax.github.io/bezierinfo/legendre-gauss.html}
+Pomax, “Gaussian Quadrature Weights and Abscissae”, \url{https://pomax.github.io/bezierinfo/legendre-gauss.html}
 
 \end{thebibliography}
 
