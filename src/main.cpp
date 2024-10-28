@@ -80,16 +80,16 @@ int main(){
     for(int i = 2; i <= 33; i++){
         time_t start = time(NULL);
         double res = gauss_quadrature_2D(i, F, integralMinX, integralMaxX, integralMinY, integralMaxY);
-        resultDiffP.push_back({i, res, time(NULL) - start, dabs(res - currentIntegral)});
+        resultDiffP.push_back({i, res, time(NULL) - start, dabs((res - currentIntegral) / currentIntegral) * 100});
         // pRef << "N = " << i << ", Result = " << std::setprecision(10) << res << std::endl;
     }
     for(int i = 0; i < resultDiffP.size() / 2; i++){
-        pRef << FORMATE(10) << resultDiffP[i].n << " & " << resultDiffP[i].integral  << " & " << resultDiffP[i].error << " & " 
-        << resultDiffP[resultDiffP.size() / 2 + i].n << " & " << resultDiffP[resultDiffP.size() / 2 + i].integral << " & "  << resultDiffP[resultDiffP.size() / 2+ i].error << " \\\\" << std::endl; 
+        pRef << FORMATE(10) << resultDiffP[i].n << " & " << resultDiffP[i].integral  << " & " << resultDiffP[i].error << "\\% & " 
+        << resultDiffP[resultDiffP.size() / 2 + i].n << " & " << resultDiffP[resultDiffP.size() / 2 + i].integral << " & "  << resultDiffP[resultDiffP.size() / 2+ i].error << "\\% \\\\" << std::endl; 
         pRef << "\\hline" << std::endl;
     }
     if(resultDiffP.size() % 2 == 1){
-        pRef << FORMATE(10)  << resultDiffP[resultDiffP.size() / 2].n << " & " << resultDiffP[resultDiffP.size() / 2].integral << " & " << resultDiffP[resultDiffP.size() / 2].time << " & " << resultDiffP[resultDiffP.size() / 2].error << " & " << " & " << " & " << " & " << " \\\\" << std::endl;
+        pRef << FORMATE(10)  << resultDiffP[resultDiffP.size() / 2].n << " & " << resultDiffP[resultDiffP.size() / 2].integral << " & " << resultDiffP[resultDiffP.size() / 2].time << " & " << resultDiffP[resultDiffP.size() / 2].error << "\\% & " << " & " << " & " << " & " << " \\\\" << std::endl;
         pRef << "\\hline" << std::endl;
     }
     pRef.close();
@@ -101,15 +101,15 @@ int main(){
     for(int i = 1; i <= 32; i++){
         time_t start = time(NULL);
         double res = gauss_quadrature_2D_grid(8, F, integralMinX, integralMaxX, integralMinY, integralMaxY, 6.0 / i);
-        resultDiffH.push_back({i, res, time(NULL) - start, dabs(res - currentIntegral)});
+        resultDiffH.push_back({i, res, time(NULL) - start, dabs(dabs((res - currentIntegral) / currentIntegral) * 100)});
     }
     for(int i = 0; i < resultDiffH.size() / 2; i++){
-        hRef << FORMATE(10)  << resultDiffH[i].n << " & " << resultDiffH[i].integral  << " & " << resultDiffH[i].error << " & " 
-        << resultDiffH[resultDiffH.size() / 2 + i].n << " & " << resultDiffH[resultDiffH.size() / 2 + i].integral << " & "  << resultDiffH[resultDiffH.size() / 2+ i].error << " \\\\" << std::endl; 
+        hRef << FORMATE(10)  << resultDiffH[i].n << " & " << resultDiffH[i].integral  << " & " << resultDiffH[i].error << "\\% & " 
+        << resultDiffH[resultDiffH.size() / 2 + i].n << " & " << resultDiffH[resultDiffH.size() / 2 + i].integral << " & "  << resultDiffH[resultDiffH.size() / 2+ i].error << "\\% \\\\" << std::endl; 
         hRef << "\\hline" << std::endl;
     }
     if(resultDiffH.size() % 2 == 1){
-        hRef << FORMATE(10) << resultDiffH[resultDiffH.size() / 2].n << " & " << resultDiffH[resultDiffH.size() / 2].integral << " & " << resultDiffH[resultDiffH.size() / 2].time << " & " << resultDiffH[resultDiffH.size() / 2].error << " & " << " & " << " & " << " & " << " \\\\" << std::endl;
+        hRef << FORMATE(10) << resultDiffH[resultDiffH.size() / 2].n << " & " << resultDiffH[resultDiffH.size() / 2].integral << " & " << resultDiffH[resultDiffH.size() / 2].time << " & " << resultDiffH[resultDiffH.size() / 2].error << "\\% & " << " & " << " & " << " & " << " \\\\" << std::endl;
         hRef << "\\hline" << std::endl;
     }
     hRef.close();
@@ -120,7 +120,7 @@ int main(){
     for(int i = 2; i <= 11; i++){
         std::vector<std::pair<int, double> > row;
         for(int j = 3; j <= 10; j++){
-            row.push_back(std::make_pair(j, dabs(gauss_quadrature_2D_grid(i, F, integralMinX, integralMaxX, integralMinY, integralMaxY, 6.0 / j) - currentIntegral)));
+            row.push_back(std::make_pair(j, dabs((gauss_quadrature_2D_grid(i, F, integralMinX, integralMaxX, integralMinY, integralMaxY, 6.0 / j) - currentIntegral) / currentIntegral * 100)));
         }
         totalIntegralResult.push_back(std::make_pair(i, row));
     }
@@ -132,16 +132,16 @@ int main(){
     for(int i = 0; i < totalIntegralResult.size(); i++){
         hpRef << totalIntegralResult[i].first;
         for(int j = 0; j < totalIntegralResult[i].second.size(); j++){
-            hpRef << " & " << FORMATE(2) << totalIntegralResult[i].second[j].second;
+            hpRef << " & " << std::fixed <<  std::setprecision(2) << totalIntegralResult[i].second[j].second << "\\%";
         }
-        hpRef << " \\\\" << std::endl;
+        hpRef << "\\\\" << std::endl;
         hpRef << "\\hline" << std::endl;
     }
     totalIntegralResult.clear();
     for(int i = 2; i <= 20; i++){
         std::vector<std::pair<int, double> > row;
         for(int j = 1; j <= 20; j++){
-            row.push_back(std::make_pair(j, dabs(gauss_quadrature_2D_grid(i, F, integralMinX, integralMaxX, integralMinY, integralMaxY, 6.0 / j) - currentIntegral)));
+            row.push_back(std::make_pair(j, dabs((gauss_quadrature_2D_grid(i, F, integralMinX, integralMaxX, integralMinY, integralMaxY, 6.0 / j) - currentIntegral) / currentIntegral * 100)));
         }
         totalIntegralResult.push_back(std::make_pair(i, row));
     }
